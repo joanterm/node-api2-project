@@ -4,6 +4,7 @@ const express = require("express")
 const router = express.Router()
 const Posts = require("./posts-model")
 
+//GET
 router.get("/", (req, res) => {
     Posts.find()
     .then((result) => {
@@ -14,6 +15,7 @@ router.get("/", (req, res) => {
     })
 })
 
+//GET BY ID
 router.get("/:id", (req, res) => {
     const id = req.params.id
     Posts.findById(id)
@@ -43,27 +45,49 @@ router.get("/:id", (req, res) => {
 //     })
 // })
 
+//POST
 router.post("/", (req, res) => {
-    console.log(req.body)
     const {title, contents} = req.body
     if(!title || !contents) {
         res.status(400).json({message: "Please provide title and contents for the post"})
         return
-    } else {
-        Posts.insert(req.body)
-        .then((id) => {
-            return Posts.findById(id.id)
-        })
-        .then((result) => {
-            res.status(201).json(result)
-        })
-        .catch(() => {
-            res.status(500).json({message: "There was an error while saving the post to the database"})
-        })
-    }
+    } 
+    Posts.insert(req.body)
+    .then((item) => { //????
+        return Posts.findById(item.id) //??????
+    })
+    .then((result) => {
+        res.status(201).json(result)
+    })
+    .catch(() => {
+        res.status(500).json({message: "There was an error while saving the post to the database"})
+    })
 })
 
-//need fixing
+//PUT
+router.put("/:id", (req, res) => {
+    const {title, contents} = req.body
+    if(title == null || contents == null) {
+        res.status(400).json({message: "Please provide title and contents for the post"})
+    }
+    Posts.update(req.params.id, req.body)
+    .then(() => {
+        return Posts.findById(req.params.id)
+    })
+    .then((result) => {
+        if(result == null) {
+            res.status(404).json({message: "The post with the specified ID does not exist"})
+            return
+        } else {
+            res.status(200).json(result)
+        }
+    })
+    .catch(() => {
+        res.status(500).json({message: "The user information could not be modified"})
+    })
+})
+
+//DELETE
 router.delete("/:id", (req, res) => {
     // const id = req.params.id
     // Posts.remove(id)
@@ -77,22 +101,53 @@ router.delete("/:id", (req, res) => {
     // .catch(() => {
     //     res.status(500).json({message: "The post could not be removed"})
     // })
+
     Posts.findById(req.params.id)
     .then((result) => {
-        if(!result) {
-            res.status(404).json({message: "The post with the specified ID does not exist"})
-            return
-        } else {
-            Posts.remove(req.params.id)
-            .then(() => {
-                res.status(200).json(result)
-            })
+        if(result == null){
+            res.status(404).json({ message: "The post with the specified ID does not exist" })
+            return;
         }
+        Posts.remove(req.params.id)
+        .then(() => {
+            res.status(200).json(result)
+        })
     })
-        .catch(() => {
+    .catch(() => {
         res.status(500).json({message: "The post could not be removed"})
     })
 })
+
+router.get("/:id/comments", (req, res) => {
+    Posts.findPostComments(req.params.id)
+    .then((result) => {
+        if(!result.length > 0) {
+            res.status(404).json({message: "The post with the specified ID does not exist"})
+        } else {
+            res.status(200).json(result)
+        }
+    })
+    .catch((err) => {
+        res.status(500).json({message: "The comments information could not be retrieved"})
+    })
+})
+
+
+// server.put("/api/users/:id", (req, res) => {
+//     update(req.params.id, req.body)
+//     .then((result) => {
+//         if(!result) {
+//             res.status(404).json({message: "The user with the specified ID does not exist"})
+//         } else if(!result.name || !result.bio) {
+//             res.status(400).json({message: "Please provide name and bio for the user"})
+//         } else {
+//             res.json(result)
+//         }
+//     })
+//     .catch(() => {
+//         res.status(500).json({message: "The user information could not be modified"})
+//     })
+// })
 
 
 
